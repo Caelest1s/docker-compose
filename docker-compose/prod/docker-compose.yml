@@ -1,5 +1,6 @@
 services:
   rabbit:
+    container_name: rabbitmq
     image: rabbitmq:3.13-management
     hostname: rabbitmq
     ports:
@@ -63,14 +64,29 @@ services:
       file: common-config.yml
       service: microservice-base-config
 
+  eurekaserver:
+    image: "jeffersoncelestino/eurekaserver:v1"
+    container_name: eurekaserver-ms
+    ports:
+      - "8070:8070"
+    healthcheck:
+      test: "curl --fail --silent localhost:8070/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    extends:
+      file: common-config.yml
+      service: microservice-configserver-config
+    environment:
+      SPRING_APPLICATION_NAME: "eurekaserver"
+
   accounts:
     image: "jeffersoncelestino/accounts:v1"
     container_name: accounts-ms
     ports:
       - "8080:8080"
     depends_on:
-      configserver:
-        condition: service_healthy
       accountsdb:
         condition: service_healthy
     environment:
@@ -78,7 +94,7 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:mysql://accountsdb:3306/accountsdb"
     extends:
       file: common-config.yml
-      service: microservice-configserver-config
+      service: microservice-eureka-config
 
   loans:
     image: "jeffersoncelestino/loans:v1"
@@ -86,8 +102,6 @@ services:
     ports:
       - "8090:8090"
     depends_on:
-      configserver:
-        condition: service_healthy
       loansdb:
         condition: service_healthy
     environment:
@@ -95,7 +109,7 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:mysql://loansdb:3306/loansdb"
     extends:
       file: common-config.yml
-      service: microservice-configserver-config
+      service: microservice-eureka-config
 
   cards:
     image: "jeffersoncelestino/cards:v1"
@@ -103,8 +117,6 @@ services:
     ports:
       - "9000:9000"
     depends_on:
-      configserver:
-        condition: service_healthy
       cardsdb:
         condition: service_healthy
     environment:
@@ -112,7 +124,7 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:mysql://cardsdb:3306/cardsdb"
     extends:
       file: common-config.yml
-      service: microservice-configserver-config
+      service: microservice-eureka-config
 
 networks:
   jeffersoncelestino:
